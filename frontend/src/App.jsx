@@ -20,9 +20,9 @@ function Protected({ children, roles }) {
 
 export default function App() {
   return (
-    <div className="min-h-screen">
+    <div>
       <Navbar />
-      <main className="max-w-5xl mx-auto px-4 py-6">
+      <main className="container">
         <Routes>
           <Route path="/" element={<Events />} />
           <Route path="/login" element={<Login />} />

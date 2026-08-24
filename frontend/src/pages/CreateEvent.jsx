@@ -37,48 +37,35 @@ export default function CreateEvent() {
     }
   }
 
-  const inputClass =
-    'w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
-
   return (
-    <div className="max-w-lg mx-auto bg-white rounded-lg border shadow-sm p-6">
-      <h1 className="text-xl font-bold mb-4">Create Event</h1>
-      <p className="text-sm text-gray-500 mb-4">
+    <div className="form-card">
+      <h1>Create Event</h1>
+      <p className="text-muted small mb">
         New events need admin approval before they appear in listings.
       </p>
 
-      {error && (
-        <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
-          {error}
-        </p>
-      )}
+      {error && <p className="alert alert-error">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div>
-          <label htmlFor="title" className="block text-sm mb-1">Title</label>
-          <input id="title" required value={form.title} onChange={set('title')} className={inputClass} />
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="title">Title</label>
+          <input id="title" required value={form.title} onChange={set('title')} />
         </div>
-        <div>
-          <label htmlFor="description" className="block text-sm mb-1">Description</label>
-          <textarea
-            id="description"
-            rows={4}
-            value={form.description}
-            onChange={set('description')}
-            className={inputClass}
-          />
+        <div className="form-group">
+          <label htmlFor="description">Description</label>
+          <textarea id="description" rows={4} value={form.description} onChange={set('description')} />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="category" className="block text-sm mb-1">Category</label>
-            <select id="category" value={form.category} onChange={set('category')} className={`${inputClass} bg-white`}>
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="category">Category</label>
+            <select id="category" value={form.category} onChange={set('category')}>
               {['Coding', 'Cultural', 'Sports', 'Workshop', 'Seminar'].map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
           </div>
-          <div>
-            <label htmlFor="capacity" className="block text-sm mb-1">Capacity</label>
+          <div className="form-group">
+            <label htmlFor="capacity">Capacity</label>
             <input
               id="capacity"
               type="number"
@@ -86,41 +73,34 @@ export default function CreateEvent() {
               required
               value={form.capacity}
               onChange={set('capacity')}
-              className={inputClass}
             />
           </div>
         </div>
-        <div>
-          <label htmlFor="venue" className="block text-sm mb-1">Venue</label>
-          <input id="venue" value={form.venue} onChange={set('venue')} className={inputClass} />
+        <div className="form-group">
+          <label htmlFor="venue">Venue</label>
+          <input id="venue" value={form.venue} onChange={set('venue')} />
         </div>
-        <div>
-          <label htmlFor="event_date" className="block text-sm mb-1">Date &amp; time</label>
+        <div className="form-group">
+          <label htmlFor="event_date">Date &amp; time</label>
           <input
             id="event_date"
             type="datetime-local"
             required
             value={form.event_date}
             onChange={set('event_date')}
-            className={inputClass}
           />
         </div>
-        <div>
-          <label htmlFor="banner_url" className="block text-sm mb-1">Banner image URL (optional)</label>
+        <div className="form-group">
+          <label htmlFor="banner_url">Banner image URL (optional)</label>
           <input
             id="banner_url"
             type="url"
             value={form.banner_url}
             onChange={set('banner_url')}
-            className={inputClass}
             placeholder="https://…"
           />
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-indigo-600 text-white rounded-md py-2 text-sm hover:bg-indigo-700 disabled:opacity-50"
-        >
+        <button type="submit" disabled={loading} className="btn btn-primary btn-block">
           {loading ? 'Creating…' : 'Create event'}
         </button>
       </form>

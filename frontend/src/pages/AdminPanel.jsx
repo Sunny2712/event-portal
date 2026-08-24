@@ -30,42 +30,32 @@ export default function AdminPanel() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Admin — Pending Events</h1>
+      <h1>Admin — Pending Events</h1>
 
-      {message && <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md p-2 mb-4">{message}</p>}
-      {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2 mb-4">{error}</p>}
+      {message && <p className="alert alert-success">{message}</p>}
+      {error && <p className="alert alert-error">{error}</p>}
 
       {pending.length === 0 ? (
-        <p className="text-gray-500">No events waiting for approval.</p>
+        <p className="text-muted">No events waiting for approval.</p>
       ) : (
-        <div className="bg-white rounded-lg border shadow-sm divide-y">
+        <div className="list">
           {pending.map((event) => (
-            <div key={event.id} className="p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="font-medium">{event.title}</h3>
-                  <p className="text-sm text-gray-600">
-                    {formatDate(event.event_date)} · {event.venue || 'No venue'} · capacity {event.capacity}
-                  </p>
-                  <p className="text-sm text-gray-500">By {event.organizer_name}</p>
-                  {event.description && (
-                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">{event.description}</p>
-                  )}
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button
-                    onClick={() => setStatus(event.id, 'approved')}
-                    className="bg-green-600 text-white rounded-md px-3 py-1.5 text-sm hover:bg-green-700"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => setStatus(event.id, 'rejected')}
-                    className="border border-red-300 text-red-600 rounded-md px-3 py-1.5 text-sm hover:bg-red-50"
-                  >
-                    Reject
-                  </button>
-                </div>
+            <div key={event.id} className="list-row">
+              <div>
+                <h3>{event.title}</h3>
+                <p className="text-muted small">
+                  {formatDate(event.event_date)} · {event.venue || 'No venue'} · capacity {event.capacity}
+                </p>
+                <p className="text-muted small">By {event.organizer_name}</p>
+                {event.description && <p className="text-muted small">{event.description}</p>}
+              </div>
+              <div className="list-row-actions">
+                <button onClick={() => setStatus(event.id, 'approved')} className="btn btn-success btn-sm">
+                  Approve
+                </button>
+                <button onClick={() => setStatus(event.id, 'rejected')} className="btn btn-danger-outline btn-sm">
+                  Reject
+                </button>
               </div>
             </div>
           ))}

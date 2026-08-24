@@ -6,12 +6,6 @@ function formatDate(iso) {
   return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-const STATUS_STYLES = {
-  pending: 'bg-yellow-50 text-yellow-700',
-  approved: 'bg-green-50 text-green-700',
-  rejected: 'bg-red-50 text-red-700',
-}
-
 export default function OrganizerDashboard() {
   const [events, setEvents] = useState([])
   const [selected, setSelected] = useState(null)
@@ -54,72 +48,54 @@ export default function OrganizerDashboard() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Organizer Dashboard</h1>
-        <Link
-          to="/organizer/create"
-          className="bg-indigo-600 text-white rounded-md px-4 py-2 text-sm hover:bg-indigo-700"
-        >
-          Create event
-        </Link>
+      <div className="page-header-row">
+        <h1>Organizer Dashboard</h1>
+        <Link to="/organizer/create" className="btn btn-primary">Create event</Link>
       </div>
 
-      {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2 mb-4">{error}</p>}
+      {error && <p className="alert alert-error">{error}</p>}
 
-      <div className="bg-white rounded-lg border shadow-sm p-4 mb-6">
-        <h2 className="font-semibold mb-2">Check-in (mark attendance)</h2>
-        <p className="text-sm text-gray-500 mb-3">
+      <div className="card mb">
+        <h2>Check-in (mark attendance)</h2>
+        <p className="text-muted small">
           Scan the attendee's QR ticket with any scanner and paste the ticket ID, or type it in.
         </p>
-        <form onSubmit={markAttendance} className="flex gap-2">
+        <form onSubmit={markAttendance} className="checkin-form">
           <input
             value={ticketId}
             onChange={(e) => setTicketId(e.target.value)}
             placeholder="Ticket ID (from QR code)"
             required
-            className="flex-1 border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             aria-label="Ticket ID"
           />
-          <button
-            type="submit"
-            className="bg-indigo-600 text-white rounded-md px-4 py-2 text-sm hover:bg-indigo-700"
-          >
-            Mark attended
-          </button>
+          <button type="submit" className="btn btn-primary">Mark attended</button>
         </form>
         {scanResult && (
           scanResult.already_checked_in ? (
-            <p className="mt-2 text-sm text-amber-800 bg-amber-50 border border-amber-300 rounded-md p-2">
+            <p className="alert alert-warning mt">
               Already checked in: {scanResult.attendee_name} — this ticket was used before.
               Possible ticket sharing.
             </p>
           ) : (
-            <p className="mt-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-md p-2">
-              Checked in: {scanResult.attendee_name}
-            </p>
+            <p className="alert alert-success mt">Checked in: {scanResult.attendee_name}</p>
           )
         )}
       </div>
 
-      <h2 className="font-semibold mb-2">My Events</h2>
+      <h2>My Events</h2>
       {events.length === 0 ? (
-        <p className="text-gray-500 text-sm">No events yet — create your first one.</p>
+        <p className="text-muted small">No events yet — create your first one.</p>
       ) : (
-        <div className="bg-white rounded-lg border shadow-sm divide-y">
+        <div className="list">
           {events.map((event) => (
-            <div key={event.id} className="p-4 flex items-center justify-between gap-2">
+            <div key={event.id} className="list-row">
               <div>
-                <h3 className="font-medium">{event.title}</h3>
-                <p className="text-sm text-gray-500">{formatDate(event.event_date)}</p>
+                <h3>{event.title}</h3>
+                <p className="text-muted small">{formatDate(event.event_date)}</p>
               </div>
-              <div className="flex items-center gap-3">
-                <span className={`text-xs px-2 py-1 rounded-full ${STATUS_STYLES[event.status]}`}>
-                  {event.status}
-                </span>
-                <button
-                  onClick={() => viewAttendees(event)}
-                  className="text-sm border rounded-md px-3 py-1.5 hover:bg-gray-50"
-                >
+              <div className="list-row-actions">
+                <span className={`badge badge-${event.status}`}>{event.status}</span>
+                <button onClick={() => viewAttendees(event)} className="btn btn-sm">
                   Registrations
                 </button>
               </div>
@@ -129,31 +105,29 @@ export default function OrganizerDashboard() {
       )}
 
       {selected && (
-        <div className="mt-6 bg-white rounded-lg border shadow-sm p-4">
-          <h2 className="font-semibold mb-3">
-            Registrations — {selected.title} ({attendees.length})
-          </h2>
+        <div className="card mt">
+          <h2>Registrations — {selected.title} ({attendees.length})</h2>
           {attendees.length === 0 ? (
-            <p className="text-gray-500 text-sm">No registrations yet.</p>
+            <p className="text-muted small">No registrations yet.</p>
           ) : (
-            <table className="w-full text-sm">
+            <table className="table">
               <thead>
-                <tr className="text-left text-gray-500 border-b">
-                  <th className="py-2 pr-2 font-medium">Name</th>
-                  <th className="py-2 pr-2 font-medium">Email</th>
-                  <th className="py-2 font-medium">Attended</th>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Attended</th>
                 </tr>
               </thead>
               <tbody>
                 {attendees.map((a) => (
-                  <tr key={a.id} className="border-b last:border-0">
-                    <td className="py-2 pr-2">{a.name}</td>
-                    <td className="py-2 pr-2">{a.email}</td>
-                    <td className="py-2">
+                  <tr key={a.id}>
+                    <td>{a.name}</td>
+                    <td>{a.email}</td>
+                    <td>
                       {a.attended ? (
-                        <span className="text-green-700">Yes</span>
+                        <span className="ticket-attended">Yes</span>
                       ) : (
-                        <span className="text-gray-400">No</span>
+                        <span className="text-muted">No</span>
                       )}
                     </td>
                   </tr>

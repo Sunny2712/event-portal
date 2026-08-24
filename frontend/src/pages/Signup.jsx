@@ -28,39 +28,22 @@ export default function Signup() {
   }
 
   return (
-    <div className="max-w-sm mx-auto mt-12 bg-white rounded-lg border shadow-sm p-6">
-      <h1 className="text-xl font-bold mb-4">Sign up</h1>
+    <div className="auth-card">
+      <h1>Sign up</h1>
 
-      {error && (
-        <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
-          {error}
-        </p>
-      )}
+      {error && <p className="alert alert-error">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div>
-          <label htmlFor="name" className="block text-sm mb-1">Name</label>
-          <input
-            id="name"
-            required
-            value={form.name}
-            onChange={set('name')}
-            className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="name">Name</label>
+          <input id="name" required value={form.name} onChange={set('name')} />
         </div>
-        <div>
-          <label htmlFor="email" className="block text-sm mb-1">Email</label>
-          <input
-            id="email"
-            type="email"
-            required
-            value={form.email}
-            onChange={set('email')}
-            className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input id="email" type="email" required value={form.email} onChange={set('email')} />
         </div>
-        <div>
-          <label htmlFor="password" className="block text-sm mb-1">Password</label>
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
           <input
             id="password"
             type="password"
@@ -68,33 +51,22 @@ export default function Signup() {
             minLength={6}
             value={form.password}
             onChange={set('password')}
-            className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
-        <div>
-          <label htmlFor="role" className="block text-sm mb-1">I am a</label>
-          <select
-            id="role"
-            value={form.role}
-            onChange={set('role')}
-            className="w-full border rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
+        <div className="form-group">
+          <label htmlFor="role">I am a</label>
+          <select id="role" value={form.role} onChange={set('role')}>
             <option value="student">Student</option>
             <option value="organizer">Organizer</option>
           </select>
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-indigo-600 text-white rounded-md py-2 text-sm hover:bg-indigo-700 disabled:opacity-50"
-        >
+        <button type="submit" disabled={loading} className="btn btn-primary btn-block">
           {loading ? 'Creating account…' : 'Sign up'}
         </button>
       </form>
 
-      <p className="text-sm text-gray-600 mt-4">
-        Already have an account?{' '}
-        <Link to="/login" className="text-indigo-600 hover:underline">Login</Link>
+      <p className="form-footer">
+        Already have an account? <Link to="/login">Login</Link>
       </p>
     </div>
   )

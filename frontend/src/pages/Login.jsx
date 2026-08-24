@@ -25,50 +25,39 @@ export default function Login() {
   }
 
   return (
-    <div className="max-w-sm mx-auto mt-12 bg-white rounded-lg border shadow-sm p-6">
-      <h1 className="text-xl font-bold mb-4">Login</h1>
+    <div className="auth-card">
+      <h1>Login</h1>
 
-      {error && (
-        <p className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">
-          {error}
-        </p>
-      )}
+      {error && <p className="alert alert-error">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div>
-          <label htmlFor="email" className="block text-sm mb-1">Email</label>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
           <input
             id="email"
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
-        <div>
-          <label htmlFor="password" className="block text-sm mb-1">Password</label>
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
           <input
             id="password"
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-indigo-600 text-white rounded-md py-2 text-sm hover:bg-indigo-700 disabled:opacity-50"
-        >
+        <button type="submit" disabled={loading} className="btn btn-primary btn-block">
           {loading ? 'Logging in…' : 'Login'}
         </button>
       </form>
 
-      <p className="text-sm text-gray-600 mt-4">
-        No account?{' '}
-        <Link to="/signup" className="text-indigo-600 hover:underline">Sign up</Link>
+      <p className="form-footer">
+        No account? <Link to="/signup">Sign up</Link>
       </p>
     </div>
   )

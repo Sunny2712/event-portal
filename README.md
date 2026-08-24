@@ -5,7 +5,7 @@ organizers create events and mark attendance via QR tickets, admins approve even
 
 ## Tech Stack
 
-- **Frontend**: React + Tailwind CSS + Vite
+- **Frontend**: React + plain CSS (Vite dev server)
 - **Backend**: Node.js + Express
 - **Database**: PostgreSQL
 - **Auth**: JWT + bcrypt
