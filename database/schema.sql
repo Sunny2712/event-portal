@@ -1,40 +1,38 @@
--- Event Management Portal — Database Schema (PostgreSQL)
--- Run with: psql -d event_portal -f schema.sql
+-- Event Management Portal — Database Schema (MySQL 8+)
+-- Load with: mysql -u root -p event_portal < database/schema.sql
 
 CREATE TABLE users (
-  id            SERIAL PRIMARY KEY,
+  id            INT AUTO_INCREMENT PRIMARY KEY,
   name          VARCHAR(100) NOT NULL,
   email         VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
-  role          VARCHAR(20)  NOT NULL DEFAULT 'student'
-                CHECK (role IN ('student', 'organizer', 'admin')),
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  role          ENUM('student', 'organizer', 'admin') NOT NULL DEFAULT 'student',
+  created_at    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE events (
-  id           SERIAL PRIMARY KEY,
+  id           INT AUTO_INCREMENT PRIMARY KEY,
   title        VARCHAR(200) NOT NULL,
   description  TEXT,
   category     VARCHAR(50),
   venue        VARCHAR(200),
-  event_date   TIMESTAMPTZ NOT NULL,
-  capacity     INTEGER NOT NULL CHECK (capacity > 0),
+  event_date   DATETIME NOT NULL,
+  capacity     INT NOT NULL CHECK (capacity > 0),
   banner_url   TEXT,
-  organizer_id INTEGER NOT NULL REFERENCES users(id),
-  status       VARCHAR(20) NOT NULL DEFAULT 'pending'
-               CHECK (status IN ('pending', 'approved', 'rejected')),
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  organizer_id INT NOT NULL,
+  status       ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+  created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (organizer_id) REFERENCES users(id)
 );
 
 CREATE TABLE registrations (
-  id            SERIAL PRIMARY KEY,
-  user_id       INTEGER NOT NULL REFERENCES users(id),
-  event_id      INTEGER NOT NULL REFERENCES events(id),
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  user_id       INT NOT NULL,
+  event_id      INT NOT NULL,
   ticket_id     VARCHAR(36) NOT NULL UNIQUE,   -- UUID, encoded in the QR code
   attended      BOOLEAN NOT NULL DEFAULT FALSE,
-  registered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (user_id, event_id)                   -- prevents duplicate registrations
+  registered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (event_id) REFERENCES events(id),
+  UNIQUE KEY uniq_user_event (user_id, event_id)   -- prevents duplicate registrations
 );
-
--- A seed admin account (password is "admin123" hashed — replace after first login)
--- Generate a real hash with: node -e "console.log(require('bcrypt').hashSync('admin123', 10))"

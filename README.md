@@ -7,34 +7,32 @@ organizers create events and mark attendance via QR tickets, admins approve even
 
 - **Frontend**: React + plain CSS (Vite dev server)
 - **Backend**: Node.js + Express
-- **Database**: PostgreSQL
+- **Database**: MySQL
 - **Auth**: JWT + bcrypt
 
 ## Prerequisites
 
 - **Node.js 18 or newer** — https://nodejs.org (check with `node --version`)
-- **PostgreSQL 14 or newer**:
-  - **Windows**: install from https://www.postgresql.org/download/windows/
-    (remember the password you set for the `postgres` user; the installer's
-    "SQL Shell (psql)" app gives you a database terminal)
-  - **macOS**: `brew install postgresql@16 && brew services start postgresql@16`,
-    then add it to your PATH:
-    `echo 'export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"' >> ~/.zshrc`
-    and open a new terminal
-  - **Linux**: `sudo apt install postgresql && sudo systemctl start postgresql`
+- **MySQL 8 or newer**:
+  - **Windows**: install "MySQL Community Server" from
+    https://dev.mysql.com/downloads/installer/ (remember the root password you
+    set; the installer's "MySQL Command Line Client" gives you a database terminal)
+  - **macOS**: `brew install mysql && brew services start mysql`
+    (Homebrew's root user has no password by default)
+  - **Linux**: `sudo apt install mysql-server && sudo systemctl start mysql`
 
 ## Setup
 
 ### 1. Database
 
 ```bash
-createdb event_portal
-psql -d event_portal -f database/schema.sql
+mysql -u root -p -e "CREATE DATABASE event_portal"
+mysql -u root -p event_portal < database/schema.sql
 ```
 
-> **Windows note**: run these in "SQL Shell (psql)" or prefix commands with the
-> `postgres` user: `createdb -U postgres event_portal` and
-> `psql -U postgres -d event_portal -f database/schema.sql`.
+> On macOS with Homebrew, drop the `-p` (no root password by default).
+> On Windows, run these lines inside "MySQL Command Line Client", or use
+> MySQL Workbench and paste in the contents of `database/schema.sql`.
 
 ### 2. Backend
 
@@ -46,9 +44,8 @@ cp .env.example .env      # Windows: copy .env.example .env
 
 Open `.env` and set:
 
-- `DATABASE_URL` — `postgres://localhost:5432/event_portal` usually works on
-  macOS/Linux; on Windows use
-  `postgres://postgres:YOUR_PASSWORD@localhost:5432/event_portal`
+- `DATABASE_URL` — `mysql://root:YOUR_PASSWORD@localhost:3306/event_portal`
+  (on macOS/Homebrew with no root password: `mysql://root@localhost:3306/event_portal`)
 - `JWT_SECRET` — any long random string
 
 Create the admin account and start the server:
@@ -82,22 +79,25 @@ the backend on port 5000 — you never open port 5000 in the browser).
 The QR ticket encodes the `ticket_id`. For a demo, scan it with any phone QR
 scanner (or just copy the ticket ID shown under the QR code).
 
-### 5. Run the tests (no database needed)
+### 5. Run the tests
 
 ```bash
 cd backend
-npm test    # 27 end-to-end API checks against an in-memory Postgres (pg-mem)
+npm test    # 27 end-to-end API checks against a throwaway MySQL test database
 ```
+
+MySQL must be running. If your root user has a password:
+`MYSQL_ROOT_URL=mysql://root:YOUR_PASSWORD@localhost:3306 npm test`
 
 ## Troubleshooting
 
-- **`command not found: psql` / `createdb`** — PostgreSQL isn't installed or
-  isn't on your PATH. See Prerequisites above.
+- **`command not found: mysql`** — MySQL isn't installed or isn't on your PATH.
+  See Prerequisites above.
 - **`Cannot GET /` on port 5000** — that's normal; the backend is an API only.
   Use http://localhost:3000.
-- **Backend crashes with a connection error** — PostgreSQL isn't running, or
-  `DATABASE_URL` in `backend/.env` is wrong (on Windows it needs the
-  `postgres:YOUR_PASSWORD@` part).
+- **Backend crashes with a connection error (`ECONNREFUSED` / `Access denied`)** —
+  MySQL isn't running, or `DATABASE_URL` in `backend/.env` has the wrong
+  password.
 - **`npm audit` warnings** — safe to ignore for this project; don't run
   `npm audit fix --force` (it can break dependencies).
 
@@ -142,7 +142,7 @@ curl http://localhost:5000/api/events
 
 ## Design Decisions (interview talking points)
 
-- **Duplicate registrations** are blocked by a database `UNIQUE(user_id, event_id)`
+- **Duplicate registrations** are blocked by a database `UNIQUE (user_id, event_id)` key
   constraint, not application logic — the DB is the source of truth.
 - **Passwords** are stored as bcrypt hashes (salted, slow by design).
 - **Login errors** are identical for wrong email vs wrong password, so an

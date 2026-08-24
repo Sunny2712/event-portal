@@ -1,29 +1,15 @@
-// End-to-end smoke test using pg-mem (in-memory Postgres) — no real DB needed.
-// Run with: node scripts/smoke-test.js
+// End-to-end smoke test against a real MySQL server.
+// Creates a throwaway `event_portal_test` database, runs 27 API checks, drops it.
+// Requires MySQL running. Run with: npm test
+// Server URL override: MYSQL_ROOT_URL=mysql://root:pass@localhost:3306 npm test
 const fs = require('fs');
 const path = require('path');
-const { newDb } = require('pg-mem');
+const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 
 process.env.JWT_SECRET = 'test-secret';
-
-// 1. Boot an in-memory Postgres and load the real schema
-const mem = newDb();
-const schema = fs.readFileSync(path.join(__dirname, '../../database/schema.sql'), 'utf8');
-mem.public.none(schema);
-
-// 2. Make src/db.js resolve to the in-memory pool before routes load it
-const { Pool } = mem.adapters.createPg();
-const dbPath = require.resolve('../src/db');
-require.cache[dbPath] = { id: dbPath, filename: dbPath, loaded: true, exports: new Pool() };
-
-// 3. Build the same app as server.js
-const express = require('express');
-const app = express();
-app.use(express.json());
-app.use('/api/auth', require('../src/routes/auth'));
-app.use('/api/events', require('../src/routes/events'));
-app.use('/api/registrations', require('../src/routes/registrations'));
+const ROOT_URL = process.env.MYSQL_ROOT_URL || 'mysql://root@localhost:3306';
+const TEST_DB = 'event_portal_test';
 
 let passed = 0;
 function assert(cond, name) {
@@ -33,10 +19,28 @@ function assert(cond, name) {
 }
 
 async function main() {
-  // Seed an admin (admins can't sign up through the API)
+  // 1. Create a fresh test database and load the real schema
+  const admin = await mysql.createConnection({ uri: ROOT_URL, multipleStatements: true });
+  await admin.query(`DROP DATABASE IF EXISTS ${TEST_DB}`);
+  await admin.query(`CREATE DATABASE ${TEST_DB}`);
+  await admin.query(`USE ${TEST_DB}`);
+  const schema = fs.readFileSync(path.join(__dirname, '../../database/schema.sql'), 'utf8');
+  await admin.query(schema);
+
+  // 2. Point the app's pool at the test database (must be set before requiring routes)
+  process.env.DATABASE_URL = `${ROOT_URL}/${TEST_DB}`;
   const pool = require('../src/db');
+
+  const express = require('express');
+  const app = express();
+  app.use(express.json());
+  app.use('/api/auth', require('../src/routes/auth'));
+  app.use('/api/events', require('../src/routes/events'));
+  app.use('/api/registrations', require('../src/routes/registrations'));
+
+  // Seed an admin (admins can't sign up through the API)
   await pool.query(
-    `INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, 'admin')`,
+    `INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'admin')`,
     ['Admin', 'admin@college.edu', await bcrypt.hash('admin123', 4)]
   );
 
@@ -55,7 +59,8 @@ async function main() {
     return { status: res.status, data: await res.json().catch(() => ({})) };
   }
 
-  const future = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+  const future = new Date(Date.now() + 24 * 3600 * 1000)
+    .toISOString().slice(0, 16); // "YYYY-MM-DDTHH:MM" like the frontend's datetime-local
 
   // ── Auth ──
   let r = await call('/auth/signup', { method: 'POST', body: { name: 'Stu', email: 's@c.edu', password: 'pass123' } });
@@ -75,8 +80,8 @@ async function main() {
 
   const student = (await call('/auth/login', { method: 'POST', body: { email: 's@c.edu', password: 'pass123' } })).data.token;
   const organizer = (await call('/auth/login', { method: 'POST', body: { email: 'o@c.edu', password: 'pass123' } })).data.token;
-  const admin = (await call('/auth/login', { method: 'POST', body: { email: 'admin@college.edu', password: 'admin123' } })).data.token;
-  assert(student && organizer && admin, 'all three roles can log in');
+  const adminTok = (await call('/auth/login', { method: 'POST', body: { email: 'admin@college.edu', password: 'admin123' } })).data.token;
+  assert(student && organizer && adminTok, 'all three roles can log in');
 
   // ── Events + approval flow ──
   r = await call('/events', { method: 'POST', token: student, body: { title: 'X', event_date: future, capacity: 5 } });
@@ -92,14 +97,14 @@ async function main() {
   r = await call('/events/admin/pending', { token: organizer });
   assert(r.status === 403, 'organizer cannot see admin pending list');
 
-  r = await call('/events/admin/pending', { token: admin });
+  r = await call('/events/admin/pending', { token: adminTok });
   assert(r.status === 200 && r.data.length === 1, 'admin sees pending event');
 
-  r = await call(`/events/${eventId}/status`, { method: 'PUT', token: admin, body: { status: 'approved' } });
+  r = await call(`/events/${eventId}/status`, { method: 'PUT', token: adminTok, body: { status: 'approved' } });
   assert(r.status === 200 && r.data.status === 'approved', 'admin approves event');
 
   r = await call('/events');
-  assert(r.data.length === 1 && r.data[0].registered_count === 0, 'approved event visible with count 0');
+  assert(r.data.length === 1 && Number(r.data[0].registered_count) === 0, 'approved event visible with count 0');
 
   r = await call('/events?search=hack');
   assert(r.data.length === 1, 'search finds event (case-insensitive)');
@@ -152,11 +157,16 @@ async function main() {
   r = await call('/registrations', { method: 'POST', token: student3, body: { event_id: eventId } });
   assert(r.status === 201, 'freed seat can be taken again');
 
+  // 3. Clean up
   server.close();
+  await pool.end();
+  await admin.query(`DROP DATABASE ${TEST_DB}`);
+  await admin.end();
   console.log(`\nAll ${passed} checks passed.`);
 }
 
 main().catch((err) => {
   console.error(err.message);
+  console.error('Is MySQL running? Set MYSQL_ROOT_URL if root has a password.');
   process.exit(1);
 });

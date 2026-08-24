@@ -20,15 +20,12 @@ router.post('/signup', async (req, res) => {
   try {
     const passwordHash = await bcrypt.hash(password, 10);
     const result = await pool.query(
-      `INSERT INTO users (name, email, password_hash, role)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, name, email, role`,
+      'INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)',
       [name, email, passwordHash, safeRole]
     );
-    res.status(201).json(result.rows[0]);
+    res.status(201).json({ id: result.insertId, name, email, role: safeRole });
   } catch (err) {
-    if (err.code === '23505') {
-      // unique_violation → email already exists
+    if (err.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ error: 'Email already registered' });
     }
     console.error(err);
@@ -41,7 +38,7 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     const user = result.rows[0];
 
     // Same error for "no user" and "wrong password" — don't leak which one it was
@@ -68,7 +65,7 @@ router.post('/login', async (req, res) => {
 // GET /api/auth/profile
 router.get('/profile', requireAuth, async (req, res) => {
   const result = await pool.query(
-    'SELECT id, name, email, role, created_at FROM users WHERE id = $1',
+    'SELECT id, name, email, role, created_at FROM users WHERE id = ?',
     [req.user.id]
   );
   res.json(result.rows[0]);
